@@ -1,0 +1,290 @@
+import numpy as np
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+
+S_0 = 100
+K = 120
+r = 0.20
+vol = 0.40
+T=2
+N = 3
+dt = T/N
+u = np.exp(vol*np.sqrt(dt))
+d = np.exp(-vol*np.sqrt(dt))
+p = (np.exp(r*dt) - d) / (u - d)
+
+
+
+StockMatrix = np.zeros((N+1, N+1))
+
+for t in range(N+1):
+    j = np.arange(t+1)
+
+    StockMatrix[:t+1, t] = (
+        S_0 * (u)**(t-j) * (d)**j
+    )
+
+# print(StockMatrix)
+
+
+
+
+call_payoffs = np.zeros(N+1)
+put_payoffs = np.zeros(N+1)
+
+for i in range(N+1):
+    call_payoffs[i] = np.maximum(StockMatrix[i,-1] - K, 0)
+    put_payoffs[i] = np.maximum(K-StockMatrix[i,-1],0)
+
+
+
+CallMatrix = np.zeros((N+1, N+1))
+PutMatrix = np.zeros((N+1, N+1))
+CallMatrix[:,-1] = call_payoffs
+PutMatrix[:,-1] = put_payoffs
+
+
+for t in np.arange(N-1, -1, -1):
+    for i in np.arange(t+1):
+        CallMatrix[i,t] = np.exp(-r * dt) * (p*CallMatrix[i,t+1] + (1-p)*CallMatrix[i+1,t+1])
+        PutMatrix[i,t] = np.exp(-r*dt) * (p*PutMatrix[i,t+1] + (1-p)*PutMatrix[i+1,t+1])
+
+
+print(f'Call Price Today: {CallMatrix[0,0]}')
+print(f'Put Price Today: {PutMatrix[0,0]}')
+print(f'Risk-Free Rate: {r}')
+print(f'Up-probability: {u}')
+print(f'Down-probability: {d}')
+print(f'Risk-Neutral Probability {p}')
+print(f'Step Size: {dt}')
+
+
+d1 = (np.log(S_0/K) + ((r+0.5*(vol**2))*T)) / (vol*np.sqrt(T))
+d2 = d1 - (vol*np.sqrt(T))
+BS_CallPrice = S_0 * norm.cdf(d1) - (K*np.exp(-r*T)*norm.cdf(d2))
+BS_PutPrice = -S_0 * norm.cdf(-d1) + (K*np.exp(-r*T)*norm.cdf(-d2))
+
+print(BS_CallPrice)
+print(BS_PutPrice)
+
+
+
+fig, ax = plt.subplots(figsize=(13, 6))
+fig.patch.set_facecolor("#0f172a")
+ax.set_facecolor("#0f172a")
+ax.axis("off")
+
+fig.suptitle(
+    "CRR Binomial Options Pricing Dashboard",
+    fontsize=20, fontweight="bold", color="white", y=0.95
+)
+
+metrics = [
+    ("CRR Call Price", f"${CallMatrix[0,0]:.4f}"),
+    ("Black-Scholes Call Price", f"${BS_CallPrice:.4f}"),
+    ("Absolute Error", f"${abs(CallMatrix[0,0] - BS_CallPrice):.4f}"),
+    ("Up Factor (u)", f"{u:.6f}"),
+    ("Down Factor (d)", f"{d:.6f}"),
+    ("Risk-Neutral Probability (p)", f"{p:.4%}"),
+    ("Annual Risk-Free Rate (r)", f"{r:.2%}"),
+    ("Volatility", f"{vol:.2%}"),
+    ("Step Size (dt)", f"{dt:.4f} years"),
+]
+
+for idx, (label, value) in enumerate(metrics):
+    row = idx // 3
+    col = idx % 3
+
+    x = 0.05 + col * 0.32
+    y = 0.70 - row * 0.27
+
+    ax.text(
+        x, y + 0.08, label,
+        transform=ax.transAxes,
+        fontsize=11, color="#94a3b8"
+    )
+
+    ax.text(
+        x, y, value,
+        transform=ax.transAxes,
+        fontsize=19, fontweight="bold", color="white"
+    )
+
+plt.show()
+
+#Convergence Test with Black Scholes Formula Pricing
+
+
+N_Values = np.arange(1,201)
+binomial_prices = []
+
+
+
+for N in N_Values:
+    dt = T/N
+    u = np.exp(vol*np.sqrt(dt))
+    d = np.exp(-vol*np.sqrt(dt))
+    p = (np.exp(r*dt) - d) / (u - d)
+    StockMatrix = np.zeros((N+1, N+1))
+
+    for t in range(N+1):
+        j = np.arange(t+1)
+
+        StockMatrix[:t+1, t] = (
+            S_0 * (u)**(t-j) * (d)**j
+        )
+
+
+
+    call_payoffs = np.zeros(N+1)
+
+    for i in range(N):
+        call_payoffs[i] = np.maximum(StockMatrix[i,-1] - K, 0)
+
+
+
+    CallMatrix = np.zeros((N+1, N+1))
+    CallMatrix[:,-1] = call_payoffs
+
+
+    for t in np.arange(N-1, -1, -1):
+        for i in np.arange(t+1):
+            CallMatrix[i,t] = np.exp(-r * dt) * (p*CallMatrix[i,t+1] + (1-p)*CallMatrix[i+1,t+1])
+
+
+    binomial_prices.append(CallMatrix[0,0])
+
+
+d1 = (np.log(S_0/K) + ((r+0.5*(vol**2))*T)) / (vol*np.sqrt(T))
+d2 = d1 - (vol*np.sqrt(T))
+BS_Price = S_0 * norm.cdf(d1) - (K*np.exp(-r*T)*norm.cdf(d2))
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(
+    N_Values,
+    binomial_prices,
+    label="CRR Binomial Tree",
+    linewidth=1.5
+)
+
+plt.axhline(
+    BS_Price,
+    color="red",
+    linestyle="--",
+    label=f"Black-Scholes = ${BS_Price:.4f}"
+)
+
+plt.xlabel("Number of Binomial Steps (N)")
+plt.ylabel("European Call Option Price ($)")
+plt.title("CRR Binomial Tree Convergence to Black-Scholes")
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()
+
+N_Values = np.arange(1, 201)
+binomial_put_prices = []
+
+for N in N_Values:
+
+    dt = T/N
+    u = np.exp(vol*np.sqrt(dt))
+    d = np.exp(-vol*np.sqrt(dt))
+    p = (np.exp(r*dt) - d) / (u - d)
+
+    StockMatrix = np.zeros((N+1, N+1))
+
+    for t in range(N+1):
+        j = np.arange(t+1)
+
+        StockMatrix[:t+1, t] = (
+            S_0 * (u)**(t-j) * (d)**j
+        )
+
+    put_payoffs = np.zeros(N+1)
+
+    for i in range(N+1):
+        put_payoffs[i] = np.maximum(
+            K - StockMatrix[i,-1], 0
+        )
+
+    PutMatrix = np.zeros((N+1, N+1))
+    PutMatrix[:,-1] = put_payoffs
+
+    for t in np.arange(N-1, -1, -1):
+        for i in np.arange(t+1):
+
+            PutMatrix[i,t] = np.exp(-r*dt) * (
+                p*PutMatrix[i,t+1] +
+                (1-p)*PutMatrix[i+1,t+1]
+            )
+
+    binomial_put_prices.append(PutMatrix[0,0])
+
+
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(
+    N_Values,
+    binomial_put_prices,
+    label="CRR Binomial Put",
+    linewidth=1.5
+)
+
+plt.axhline(
+    BS_PutPrice,
+    color="red",
+    linestyle="--",
+    label=f"Black-Scholes Put = ${BS_PutPrice:.4f}"
+)
+
+plt.xlabel("Number of Binomial Steps (N)")
+plt.ylabel("European Put Option Price ($)")
+plt.title("CRR Binomial Put Convergence to Black-Scholes")
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()
+
+
+
+Put_Error = np.array(binomial_put_prices) - BS_PutPrice
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(
+    N_Values,
+    np.abs(Put_Error),
+    label="Absolute Pricing Error",
+    linewidth=1.5
+)
+
+plt.xlabel("Number of Binomial Steps (N)")
+plt.ylabel("Absolute Error ($)")
+plt.title("CRR Binomial Put — Absolute Pricing Error")
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()
+
+
+
+Put_MAE = np.mean(np.abs(Put_Error))
+Put_RMSE = np.sqrt(np.mean(Put_Error**2))
+Put_Max_Error = np.max(np.abs(Put_Error))
+
+print("\n===== CRR BINOMIAL PUT ERROR ANALYSIS =====")
+
+print(f"Mean Absolute Error: ${Put_MAE:.6f}")
+print(f"RMSE:                ${Put_RMSE:.6f}")
+print(f"Maximum Error:       ${Put_Max_Error:.6f}")
+print(f"Error at N=200:      ${abs(Put_Error[-1]):.6f}")
+
+
+
+Parity_Left = BS_CallPrice + K*np.exp(-r*T)
+Parity_Right = BS_PutPrice + S_0
+
+print("\n===== BLACK-SCHOLES PUT-CALL PARITY =====")
+print(f"Call + PV(Strike): ${Parity_Left:.6f}")
+print(f"Put + Stock:      ${Parity_Right:.6f}")
+print(f"Absolute Error:   ${abs(Parity_Left-Parity_Right):.8f}")
