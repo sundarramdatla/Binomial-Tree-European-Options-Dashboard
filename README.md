@@ -1,6 +1,6 @@
 # Binomial Tree Pricing Model for Derivatives
 
-**[My Live Interactive Website](https://sundarramdatla.github.io/binomial-tree-derivative-pricing-model/)**
+**[View the Model on Browser](https://sundarramdatla.github.io/binomial-tree-derivative-pricing-model/)**
 
 ## 1. Introduction
 
