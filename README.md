@@ -1,14 +1,12 @@
-# Binomial Tree Derivative Pricing Model
+# Binomial Tree Pricing Model for Derivatives
 
-**An interactive Cox–Ross–Rubinstein (CRR) binomial tree model for pricing European call and put options.**
-
-**[Live Interactive Website](https://sundarramdatla.github.io/binomial-tree-derivative-pricing-model/)**
+**[My Live Interactive Website](https://sundarramdatla.github.io/binomial-tree-derivative-pricing-model/)**
 
 ## 1. Introduction
 
-The binomial tree model is a discrete-time framework for pricing financial derivatives by modeling possible movements in an underlying asset's price. Using **risk-neutral valuation and backward induction**, it determines the present value of an option from its possible terminal payoffs.
+The binomial tree model is a discrete time method for pricing derivatives by modeling probabilistic movements in the underlying asset's price. Using risk-neutral probabilities and backward induction, the tree determines the present value of an option from terminal payoffs.
 
-The **Cox–Ross–Rubinstein (CRR) model** constructs a *recombining binomial tree*, where each upward movement followed by a downward movement leads to the same stock price as a downward movement followed by an upward movement. This reduces computational complexity from an exponentially growing tree to \(O(N^2)\) nodes.
+The Cox Ross Rubinstein (CRR) model is a recombining variation on the binomial tree, where each upward movement followed by a downward movement leads to the same stock price as a downward movement followed by an upward movement. This symmetry reduces computational complexity from an exponentially growing tree to \(O(N^2)\) nodes.
 
 ## 2. Mathematical Methodology
 
